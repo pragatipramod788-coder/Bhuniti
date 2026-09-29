@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700;800;900&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -69,7 +70,7 @@ body {
   background: radial-gradient(circle at 80% -10%, rgba(31, 58, 147, 0.35), transparent 45%),
               linear-gradient(180deg, #0A2A5E 0%, #08224D 50%, #061A3B 100%);
   color: var(--text);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: Inter, 'Noto Sans Devanagari', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   min-height: 100vh;
 }
 
@@ -303,6 +304,48 @@ html[data-theme='light'] .app-topbar .profile-link {
 }
 .topbar-start, .topbar-end { display: flex; align-items: center; gap: 12px; }
 .topbar-end { gap: 7px; }
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 9px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  transform: translateX(-2px);
+}
+html[data-theme='light'] .app-topbar .back-btn {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #FFFFFF;
+}
+html[data-theme='light'] .app-topbar .back-btn:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+.nav-link-top {
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  color: var(--muted);
+  font-weight: 600;
+}
+.nav-link-top:hover {
+  color: var(--text);
+}
+.nav-link-top.active {
+  color: #FF9933;
+  background: rgba(255, 153, 51, 0.12);
+  border: 1px solid rgba(255, 153, 51, 0.3);
+}
 .command-button {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--line);

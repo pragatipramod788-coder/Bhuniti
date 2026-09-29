@@ -4,6 +4,7 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import {GeoJsonLayer,ScatterplotLayer} from '@deck.gl/layers';
 import {MapboxOverlay} from '@deck.gl/mapbox';
+import {useLanguage} from '../context/LanguageContext';
 
 const layers=['Land Use','Climate Impact','Urban Growth','Land Disputes','Infrastructure','Policy Impact'];
 type Level='state'|'district';
@@ -19,6 +20,7 @@ export default function MapView(){
   const [swipePos,setSwipePos]=useState(52);
   const [level,setLevel]=useState<Level>('state');
   const [selected,setSelected]=useState('India');
+  const {t}=useLanguage();
 
   const colorFor=(feature:any,targetYear:number,alpha=1):[number,number,number,number]=>{
     const base=(Number(feature?.properties?.ID_1||feature?.properties?.ID_2||0)*13+targetYear)%100;
@@ -103,7 +105,7 @@ export default function MapView(){
         <>
           <div aria-hidden="true" style={{position:'absolute',top:0,bottom:0,left:`${swipePos}%`,width:3,background:'#FF9933',boxShadow:'0 0 18px rgba(255,153,51,.9)',zIndex:3,pointerEvents:'none'}}/>
           <div style={{position:'absolute',top:78,left:`calc(${swipePos}% - 54px)`,zIndex:4,background:'rgba(10,42,94,.92)',color:'#FF9933',padding:'5px 7px',borderRadius:6,fontSize:9,fontWeight:800}}>
-            BEFORE / AFTER
+            {t('gis.beforeAfter')}
           </div>
           <input aria-label="Swipe comparison position" type="range" min="20" max="80" value={swipePos} onChange={e=>setSwipePos(+e.target.value)} style={{position:'absolute',bottom:112,left:'25%',width:'50%',zIndex:4,accentColor:'#FF9933'}}/>
         </>
@@ -115,13 +117,13 @@ export default function MapView(){
           </button>
         ))}
         <button onClick={()=>setSwipe(v=>!v)} className="focus-ring" style={{background:swipe?'#FF9933':'rgba(10,42,94,.85)',color:swipe?'#0A2A5E':'#FFFFFF',border:'1px solid rgba(255,255,255,.22)',borderRadius:999,padding:'8px 11px',fontSize:11,fontWeight:800}}>
-          {swipe?'Swipe on':'Swipe mode'}
+          {swipe?t('gis.swipeOn'):t('gis.swipeMode')}
         </button>
       </div>
       <div style={{position:'absolute',top:72,left:16,zIndex:2,display:'flex',gap:6}}>
         {(['state','district'] as Level[]).map(x=>(
           <button key={x} onClick={()=>setLevel(x)} className="focus-ring" style={{background:level===x?'#1F3A93':'rgba(10,42,94,.85)',color:'#FFFFFF',border:'1px solid rgba(255,255,255,.22)',borderRadius:8,padding:'7px 10px',fontSize:10,fontWeight:800}}>
-            {x==='state'?'State boundaries':'District boundaries'}
+            {x==='state'?t('gis.stateBoundaries'):t('gis.districtBoundaries')}
           </button>
         ))}
       </div>
@@ -132,13 +134,13 @@ export default function MapView(){
             <div className="muted" style={{fontSize:12,marginTop:4}}>Open India {level} GeoJSON · deck.gl overlay · selected {selected}{compare?` · before ${Math.max(2016,year-4)} vs ${year}`:''}{swipe?' · swipe divider active':''}</div>
           </div>
           <button onClick={()=>setCompare(v=>!v)} className="focus-ring" style={{background:compare?'rgba(255,153,51,.25)':'rgba(31,58,147,.4)',color:compare?'#FF9933':'#FFFFFF',border:compare?'1px solid rgba(255,153,51,.5)':'1px solid rgba(255,255,255,.25)',padding:'8px 12px',borderRadius:10,fontWeight:800}}>
-            {compare?'Exit compare':'Compare before / after'}
+            {compare?t('gis.exitCompare'):t('gis.compare')}
           </button>
         </div>
         <input aria-label="Map year" type="range" min="2016" max="2024" value={year} onChange={e=>setYear(+e.target.value)} style={{width:'100%',accentColor:'#FF9933',marginTop:12}}/>
         <div className="muted" style={{display:'flex',justifyContent:'space-between',fontSize:10}}>
           <span>2016</span>
-          <span>Urban growth year slider · click a boundary to drill down</span>
+          <span>{t('gis.yearSlider')}</span>
           <span>2024</span>
         </div>
       </div>

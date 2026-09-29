@@ -1,39 +1,50 @@
 'use client';
 import {useEffect,useState} from 'react';
 import Link from 'next/link';
-import {Activity,AlertTriangle,BrainCircuit,Command,Database,FileSearch,Globe2,Layers3,LayoutDashboard,Menu,Network,PanelLeft,Scale,Settings2,ShieldCheck,Sparkles,Users,Workflow,X} from 'lucide-react';
+import {Activity,AlertTriangle,BrainCircuit,Command,Database,FileSearch,Globe2,Home,Layers3,LayoutDashboard,Menu,Network,PanelLeft,Scale,Settings2,ShieldCheck,Sparkles,Users,Workflow,X} from 'lucide-react';
+import BackButton from './BackButton';
+import {useLanguage} from '../context/LanguageContext';
 
 const nav=[
-  ['dashboard','Command Center',LayoutDashboard],
-  ['repository','Central Repository',Database],
-  ['search','AI Research Search',FileSearch],
-  ['recommendations','Policy Recommendations',Scale],
-  ['copilot','Research Copilot',BrainCircuit],
-  ['gis','GIS Intelligence',Globe2],
-  ['analytics','Analytics',Activity],
-  ['simulation','Policy Simulation',Workflow],
-  ['projects','Collaboration',Users],
-  ['early-warning','Dispute Early-Warning',AlertTriangle],
-  ['knowledge-graph','Knowledge Graph',Network],
-  ['time-machine','Impact Time Machine',Layers3],
-  ['permissions','Permissions & DPDP',ShieldCheck],
-  ['api-docs','Developer APIs',Settings2]
+  ['','nav.home',Home],
+  ['dashboard','nav.dashboard',LayoutDashboard],
+  ['repository','nav.repository',Database],
+  ['search','nav.search',FileSearch],
+  ['recommendations','nav.recommendations',Scale],
+  ['copilot','nav.copilot',BrainCircuit],
+  ['gis','nav.gis',Globe2],
+  ['analytics','nav.analytics',Activity],
+  ['simulation','nav.simulation',Workflow],
+  ['projects','nav.projects',Users],
+  ['early-warning','nav.earlyWarning',AlertTriangle],
+  ['knowledge-graph','nav.knowledgeGraph',Network],
+  ['time-machine','nav.timeMachine',Layers3],
+  ['permissions','nav.permissions',ShieldCheck],
+  ['api-docs','nav.apiDocs',Settings2]
 ] as const;
 
-const roles=['Government Official','Researcher','Student','Institution Admin','Public User','Super Admin'];
+const roles=['Government Official','Researcher','Student','Institution Admin','Public User','Super Admin'] as const;
+const roleKeyMap:Record<string,string>={
+  'Government Official':'role.official',
+  'Researcher':'role.researcher',
+  'Student':'role.student',
+  'Institution Admin':'role.admin',
+  'Public User':'role.public',
+  'Super Admin':'role.super'
+};
 
 export default function AppShell({children,active='dashboard'}:{children:React.ReactNode;active?:string}){
   const [open,setOpen]=useState(true);
   const [palette,setPalette]=useState(false);
   const [contrast,setContrast]=useState(false);
   const [light,setLight]=useState(()=>active==='repository');
-  const [role,setRole]=useState('Government Official');
-  const [language,setLanguage]=useState('English');
+  const [role,setRole]=useState<string>('Government Official');
+  const {lang,setLang,t}=useLanguage();
 
   useEffect(()=>{
     const roleParam=new URLSearchParams(window.location.search).get('role');
     const savedRole=window.localStorage.getItem('bhuniti-role');
-    if(roleParam&&roles.includes(roleParam))setRole(roleParam);
+    if(roleParam&&roles.includes(roleParam as any))setRole(roleParam);
     else if(savedRole)setRole(savedRole);
 
     const fn=(e:KeyboardEvent)=>{
@@ -59,7 +70,7 @@ export default function AppShell({children,active='dashboard'}:{children:React.R
       <div className="app-shell-inner">
         <aside className="app-sidebar glass">
           <div className="brand-row">
-            <Link href="/" className="brand-link">
+            <Link href="/" className="brand-link" title={t('nav.home')}>
               <span className="brand-mark">B</span>
               {open&&<span className="brand-word">Bhu<span>Niti</span></span>}
             </Link>
@@ -68,18 +79,22 @@ export default function AppShell({children,active='dashboard'}:{children:React.R
             </button>
           </div>
           <nav className="app-nav">
-            {nav.map(([id,label,Icon])=>(
-              <Link key={id} href={'/'+id} className={`nav-link focus-ring ${active===id?'active':''}`}>
-                <Icon size={16}/>
-                {open&&label}
-              </Link>
-            ))}
+            {nav.map(([id,labelKey,Icon])=>{
+              const isActive = id==='' ? (active===''||active==='home') : active===id;
+              const href = id ? '/' + id : '/';
+              return (
+                <Link key={id||'home'} href={href} className={`nav-link focus-ring ${isActive?'active':''}`}>
+                  <Icon size={16}/>
+                  {open&&t(labelKey)}
+                </Link>
+              );
+            })}
           </nav>
           {open&&(
             <div className="shell-controls">
-              <label className="muted" htmlFor="active-role">ACTIVE ROLE</label>
-              <select id="active-role" aria-label="Active role" value={role} onChange={e=>setRole(e.target.value)}>
-                {roles.map(x=><option key={x}>{x}</option>)}
+              <label className="muted" htmlFor="active-role">{t('nav.activeRole')}</label>
+              <select id="active-role" aria-label={t('nav.activeRole')} value={role} onChange={e=>setRole(e.target.value)}>
+                {roles.map(x=><option key={x} value={x}>{t(roleKeyMap[x]||x)}</option>)}
               </select>
             </div>
           )}
@@ -88,20 +103,27 @@ export default function AppShell({children,active='dashboard'}:{children:React.R
         <main className="app-main">
           <header className="glass app-topbar">
             <div className="topbar-start">
+              <BackButton />
               <button onClick={()=>setPalette(true)} className="command-button focus-ring">
-                <Command size={14}/> Search anything <span className="keycap">⌘K</span>
+                <Command size={14}/> {t('nav.searchAnything')} <span className="keycap">⌘K</span>
               </button>
-              <span className="muted topbar-network">National Land Intelligence Network</span>
+              <span className="muted topbar-network">{t('nav.network')}</span>
             </div>
             <div className="topbar-end">
-              <label className="sr-only" htmlFor="language">Language</label>
-              <select id="language" aria-label="Language" value={language} onChange={e=>setLanguage(e.target.value)} className="compact-select">
-                <option>English</option>
-                <option>हिन्दी</option>
-                <option>मराठी</option>
+              <label className="sr-only" htmlFor="language">{t('nav.language')}</label>
+              <select
+                id="language"
+                aria-label={t('nav.language')}
+                value={lang}
+                onChange={e=>setLang(e.target.value as any)}
+                className="compact-select"
+              >
+                <option value="en">English</option>
+                <option value="hi">हिन्दी</option>
+                <option value="mr">मराठी</option>
               </select>
               <button onClick={()=>setLight(v=>!v)} aria-label={light?'Use dark theme':'Use light theme'} className="icon-button focus-ring" title={light?'Switch to Dark Mode':'Switch to Light Mode'}>
-                <Sparkles size={17} color={light?'#FF9933':'#FF9933'}/>
+                <Sparkles size={17} color="#FF9933"/>
               </button>
               <button onClick={()=>setContrast(v=>!v)} aria-label="Toggle high contrast" className="icon-button focus-ring" title="Toggle contrast">
                 <span style={{fontSize:11,fontWeight:900}}>A</span>
@@ -120,20 +142,23 @@ export default function AppShell({children,active='dashboard'}:{children:React.R
         <div role="dialog" aria-modal="true" onClick={()=>setPalette(false)} className="palette-backdrop">
           <div onClick={e=>e.stopPropagation()} className="glass palette-dialog">
             <div className="palette-header">
-              <div className="eyebrow">Command palette</div>
+              <div className="eyebrow">{t('nav.commandPalette')}</div>
               <button onClick={()=>setPalette(false)} className="icon-button">
                 <X size={16}/>
               </button>
             </div>
-            <input autoFocus placeholder="Search pages, datasets, policies…" className="focus-ring palette-input"/>
+            <input autoFocus placeholder={t('nav.palettePlaceholder')} className="focus-ring palette-input"/>
             <div className="palette-links">
-              {nav.slice(0,7).map(([id,label,Icon])=>(
-                <Link key={id} href={'/'+id} onClick={()=>setPalette(false)} className="palette-link">
-                  <Icon size={15} color="#FF9933"/>
-                  {label}
-                  <span className="muted">Go to</span>
-                </Link>
-              ))}
+              {nav.slice(0,8).map(([id,labelKey,Icon])=>{
+                const href = id ? '/' + id : '/';
+                return (
+                  <Link key={id||'home'} href={href} onClick={()=>setPalette(false)} className="palette-link">
+                    <Icon size={15} color="#FF9933"/>
+                    {t(labelKey)}
+                    <span className="muted">{t('nav.goTo')}</span>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </div>

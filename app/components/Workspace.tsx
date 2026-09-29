@@ -7,6 +7,7 @@ import AppShell from './AppShell';
 import {repoItems,projects,risks,activity} from '../data/seed';
 import {DisputeChart,LandUseChart,TrendChart} from './Charts';
 import UploadAsset from './UploadAsset';
+import {useLanguage} from '../context/LanguageContext';
 
 const MapView=dynamic(()=>import('./MapView'),{ssr:false,loading:()=> (
   <div className="glass" style={{height:560,borderRadius:24,display:'grid',placeItems:'center'}}>
@@ -28,50 +29,52 @@ function Header({kicker,title,desc,action}:{kicker:string;title:string;desc:stri
 }
 
 function Stat({label,value,delta,down=false}:{label:string;value:string;delta:string;down?:boolean}){
+  const {t}=useLanguage();
   return (
     <div className="glass" style={{padding:17,borderRadius:16}}>
       <div className="muted" style={{fontSize:11}}>{label}</div>
       <div className="metric" style={{fontSize:28,fontWeight:900,margin:'8px 0'}}>{value}</div>
       <div style={{fontSize:11,color:down?'#FF5A5A':'#138808',fontWeight:700,display:'flex',alignItems:'center',gap:3}}>
-        {down?<ArrowDownRight size={13}/>:<ArrowUpRight size={13}/>} {delta} <span className="muted" style={{fontWeight:400,marginLeft:4}}>vs last period</span>
+        {down?<ArrowDownRight size={13}/>:<ArrowUpRight size={13}/>} {delta} <span className="muted" style={{fontWeight:400,marginLeft:4}}>{t('dash.vsLast')}</span>
       </div>
     </div>
   );
 }
 
 function Dashboard(){
+  const {t}=useLanguage();
   return (
     <>
       <Header
-        kicker="Command center · live"
-        title="Good morning, Aarav."
-        desc="A national view of land governance signals, evidence quality and the decisions that need attention today."
+        kicker={t('dash.kicker')}
+        title={t('dash.title')}
+        desc={t('dash.desc')}
         action={
           <button className="focus-ring" onClick={()=>window.print()} style={{background:'var(--btn-bg)',color:'var(--btn-text)',border:0,borderRadius:10,padding:'11px 14px',fontWeight:900}}>
-            <Download size={14} style={{verticalAlign:'middle'}}/> Export insight report
+            <Download size={14} style={{verticalAlign:'middle'}}/> {t('dash.export')}
           </button>
         }
       />
       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12}}>
-        <Stat label="Land records indexed" value="12.4M" delta="18.6%"/>
-        <Stat label="Dispute risk monitored" value="2,840" delta="8.2%" down/>
-        <Stat label="Evidence score" value="87.4" delta="4.9%"/>
-        <Stat label="Active workspaces" value="148" delta="12.1%"/>
+        <Stat label={t('dash.stat1')} value="12.4M" delta="18.6%"/>
+        <Stat label={t('dash.stat2')} value="2,840" delta="8.2%" down/>
+        <Stat label={t('dash.stat3')} value="87.4" delta="4.9%"/>
+        <Stat label={t('dash.stat4')} value="148" delta="12.1%"/>
       </div>
       <div style={{display:'grid',gridTemplateColumns:'1.35fr 1fr',gap:14,marginTop:14}}>
         <section className="glass" style={{padding:18,borderRadius:18}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
             <div>
-              <div className="eyebrow">Dispute signals</div>
-              <h3 style={{margin:'5px 0 0'}}>Monthly case trajectory</h3>
+              <div className="eyebrow">{t('dash.disputeSignals')}</div>
+              <h3 style={{margin:'5px 0 0'}}>{t('dash.caseTrajectory')}</h3>
             </div>
-            <span style={{fontSize:11,color:'#138808',fontWeight:700}}>−36% since Jan</span>
+            <span style={{fontSize:11,color:'#138808',fontWeight:700}}>{t('dash.sinceJan')}</span>
           </div>
           <DisputeChart/>
         </section>
         <section className="glass" style={{padding:18,borderRadius:18}}>
-          <div className="eyebrow">Needs attention</div>
-          <h3 style={{margin:'5px 0 14px'}}>Early-warning districts</h3>
+          <div className="eyebrow">{t('dash.needsAttention')}</div>
+          <h3 style={{margin:'5px 0 14px'}}>{t('dash.earlyWarning')}</h3>
           {risks.map(r=>(
             <Link href="/early-warning" key={r.district} style={{display:'flex',alignItems:'center',gap:10,padding:'11px 0',borderBottom:'1px solid var(--line)'}}>
               <span style={{width:8,height:8,borderRadius:'50%',background:r.color==='critical'?'#FF5A5A':r.color==='high'?'#FF9933':'#138808'}}/>
@@ -87,13 +90,13 @@ function Dashboard(){
       </div>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginTop:14}}>
         <section className="glass" style={{padding:18,borderRadius:18}}>
-          <div className="eyebrow">Land use transition</div>
-          <h3 style={{margin:'5px 0 12px'}}>Urban footprint is accelerating</h3>
+          <div className="eyebrow">{t('dash.landUse')}</div>
+          <h3 style={{margin:'5px 0 12px'}}>{t('dash.urbanFootprint')}</h3>
           <LandUseChart/>
         </section>
         <section className="glass" style={{padding:18,borderRadius:18}}>
-          <div className="eyebrow">Activity feed</div>
-          <h3 style={{margin:'5px 0 10px'}}>Across your network</h3>
+          <div className="eyebrow">{t('dash.activityFeed')}</div>
+          <h3 style={{margin:'5px 0 10px'}}>{t('dash.acrossNetwork')}</h3>
           {activity.map(a=>(
             <div key={a.label} style={{display:'flex',gap:10,padding:'11px 0',borderBottom:'1px solid var(--line)'}}>
               <div style={{width:26,height:26,borderRadius:8,background:'rgba(255,153,51,.12)',display:'grid',placeItems:'center'}}>
@@ -112,6 +115,7 @@ function Dashboard(){
 }
 
 function Repository(){
+  const {t}=useLanguage();
   const [q,setQ]=useState('');
   const [preview,setPreview]=useState<string|null>(null);
   const [voice,setVoice]=useState(false);
@@ -145,9 +149,9 @@ function Repository(){
   return (
     <>
       <Header
-        kicker="Central repository · provenance first"
-        title="Research, data, policy — together."
-        desc="A trusted evidence layer for land governance, with source, date, version and uploader visible at every step."
+        kicker={t('repo.kicker')}
+        title={t('repo.title')}
+        desc={t('repo.desc')}
         action={<UploadAsset/>}
       />
       <div className="glass" style={{padding:12,borderRadius:16,display:'flex',gap:8,alignItems:'center',marginBottom:14}}>
@@ -155,7 +159,7 @@ function Repository(){
         <input
           value={q}
           onChange={e=>setQ(e.target.value)}
-          placeholder="Search titles, abstracts and tags with relevance scoring…"
+          placeholder={t('repo.searchPlaceholder')}
           style={{flex:1,background:'transparent',border:0,outline:0,color:'var(--text)',fontSize:13}}
         />
         <button onClick={startVoice} aria-label="Start voice search" className="focus-ring" style={{background:voice?'rgba(255,153,51,.2)':'rgba(255,255,255,.05)',border:'1px solid var(--line)',color:voice?'#FF9933':'var(--muted)',borderRadius:8,padding:8}}>
@@ -167,8 +171,8 @@ function Repository(){
       </div>
       {voiceError&&<div role="status" style={{color:'#FF9933',fontSize:11,marginBottom:10}}>{voiceError}</div>}
       <div style={{display:'flex',gap:8,marginBottom:14,flexWrap:'wrap'}}>
-        {['All formats','Papers','Datasets','Policies','Legal','Maharashtra','Climate','2024'].map(x=>(
-          <button key={x} onClick={()=>setQ(x==='All formats'?'':x)} style={{fontSize:11,padding:'7px 10px',borderRadius:999,border:'1px solid var(--line)',color:'var(--muted)',background:'transparent'}}>
+        {[t('repo.allFormats'),t('repo.papers'),t('repo.datasets'),t('repo.policies'),t('repo.legal'),'Maharashtra','Climate','2024'].map(x=>(
+          <button key={x} onClick={()=>setQ(x===t('repo.allFormats')?'':x)} style={{fontSize:11,padding:'7px 10px',borderRadius:999,border:'1px solid var(--line)',color:'var(--muted)',background:'transparent'}}>
             {x}
           </button>
         ))}
@@ -182,13 +186,13 @@ function Repository(){
             <div style={{flex:1,minWidth:230}}>
               <div style={{display:'flex',gap:8,alignItems:'center'}}>
                 <span className="eyebrow" style={{fontSize:9}}>{item.type} · {item.format}</span>
-                <span style={{fontSize:10,color:'#FF9933',fontWeight:700}}>Evidence {item.evidence}</span>
+                <span style={{fontSize:10,color:'#FF9933',fontWeight:700}}>{t('repo.evidence')} {item.evidence}</span>
               </div>
               <h3 style={{fontSize:15,margin:'6px 0'}}>{item.title}</h3>
               <p className="muted" style={{fontSize:12,lineHeight:1.5,margin:'0 0 8px'}}>{item.abstract}</p>
               <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                {item.tags.map(t=>(
-                  <span key={t} style={{fontSize:10,color:'var(--muted)',background:'rgba(255,255,255,.05)',padding:'4px 7px',borderRadius:6}}>#{t}</span>
+                {item.tags.map(tTag=>(
+                  <span key={tTag} style={{fontSize:10,color:'var(--muted)',background:'rgba(255,255,255,.05)',padding:'4px 7px',borderRadius:6}}>#{tTag}</span>
                 ))}
               </div>
             </div>
@@ -196,7 +200,7 @@ function Repository(){
               <div className="muted">{item.state} · {item.year}</div>
               <div className="muted" style={{margin:'5px 0 10px'}}>v{item.version.replace('v','')} · {item.uploader}</div>
               <button onClick={()=>setPreview(item.id)} className="focus-ring" style={{background:'rgba(255,153,51,.12)',color:'#FF9933',border:'1px solid rgba(255,153,51,.35)',borderRadius:8,padding:'7px 9px',fontSize:11,fontWeight:700}}>
-                Preview dataset
+                {t('repo.preview')}
               </button>
             </div>
           </div>
@@ -207,8 +211,8 @@ function Repository(){
           <div onClick={e=>e.stopPropagation()} className="glass" style={{width:'min(720px,100%)',padding:22,borderRadius:20}}>
             <div style={{display:'flex',justifyContent:'space-between'}}>
               <div>
-                <div className="eyebrow">Dataset preview · evidence record {preview}</div>
-                <h2 style={{margin:'8px 0'}}>Source, schema and provenance</h2>
+                <div className="eyebrow">{t('repo.previewTitle')} {preview}</div>
+                <h2 style={{margin:'8px 0'}}>{t('repo.sourceSchema')}</h2>
               </div>
               <button onClick={()=>setPreview(null)} style={{background:'transparent',border:0,color:'var(--muted)'}}>
                 <X size={18}/>
@@ -228,6 +232,7 @@ function Repository(){
 }
 
 function AI({kind}:{kind:'copilot'|'recommendations'|'search'}){
+  const {t}=useLanguage();
   const [q,setQ]=useState('');
   const [answer,setAnswer]=useState('');
   const [citations,setCitations]=useState<string[]>([]);
@@ -252,14 +257,14 @@ function AI({kind}:{kind:'copilot'|'recommendations'|'search'}){
   return (
     <>
       <Header
-        kicker={kind==='copilot'?'RAG research copilot':kind==='recommendations'?'Evidence-ranked policy engine':'Semantic evidence search'}
-        title={kind==='copilot'?'Ask the repository.':'Make the next move with evidence.'}
-        desc="Grounded answers over the BhuNiti repository, with citations, relevance signals and a transparent fallback when no model quota is available."
+        kicker={kind==='copilot'?t('ai.copilotKicker'):kind==='recommendations'?t('ai.recomKicker'):t('ai.searchKicker')}
+        title={kind==='copilot'?t('ai.copilotTitle'):t('ai.engineTitle')}
+        desc={t('ai.desc')}
       />
       <div style={{display:'grid',gridTemplateColumns:'1.15fr .85fr',gap:14}}>
         <section className="glass" style={{padding:20,borderRadius:18,minHeight:480}}>
           <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:16}}>
-            {['Compare Maharashtra and Assam','Draft a policy brief','What reduces disputes?'].map(x=>(
+            {[t('ai.q1'),t('ai.q2'),t('ai.q3')].map(x=>(
               <button key={x} onClick={()=>setQ(x)} style={{background:'rgba(255,153,51,.1)',border:'1px solid rgba(255,153,51,.28)',color:'#FF9933',borderRadius:999,padding:'8px 10px',fontSize:11,fontWeight:700}}>
                 {x}
               </button>
@@ -286,8 +291,8 @@ function AI({kind}:{kind:'copilot'|'recommendations'|'search'}){
             <div style={{height:300,display:'grid',placeItems:'center',textAlign:'center'}}>
               <div>
                 <Sparkles size={28} color="#FF9933"/>
-                <h3>Start with a policy question</h3>
-                <p className="muted" style={{fontSize:12}}>The model receives repository context before it answers.</p>
+                <h3>{t('ai.startQuestion')}</h3>
+                <p className="muted" style={{fontSize:12}}>{t('ai.modelContext')}</p>
               </div>
             </div>
           )}
@@ -296,7 +301,7 @@ function AI({kind}:{kind:'copilot'|'recommendations'|'search'}){
               value={q}
               onChange={e=>setQ(e.target.value)}
               onKeyDown={e=>e.key==='Enter'&&ask()}
-              placeholder="Ask about land governance…"
+              placeholder={t('ai.inputPlaceholder')}
               className="focus-ring"
               style={{flex:1,background:'var(--panel2)',border:'1px solid var(--line)',borderRadius:10,padding:'12px 13px',color:'var(--text)'}}
             />
@@ -306,19 +311,19 @@ function AI({kind}:{kind:'copilot'|'recommendations'|'search'}){
           </div>
         </section>
         <section className="glass" style={{padding:20,borderRadius:18}}>
-          <div className="eyebrow">How it works</div>
-          <h3>Transparent by default</h3>
+          <div className="eyebrow">{t('ai.howItWorks')}</div>
+          <h3>{t('ai.transparent')}</h3>
           {[
-            ['01','Retrieve','Find the strongest title, abstract and tag matches.'],
-            ['02','Reason','Use a real LLM call when the managed runtime is available.'],
-            ['03','Cite','Show the returned source IDs that shaped the response.'],
-            ['04','Fallback','Keep a deterministic evidence-grounded answer if quota is unavailable.']
-          ].map(([n,t,d])=>(
+            ['01',t('ai.step1Title'),t('ai.step1Desc')],
+            ['02',t('ai.step2Title'),t('ai.step2Desc')],
+            ['03',t('ai.step3Title'),t('ai.step3Desc')],
+            ['04',t('ai.step4Title'),t('ai.step4Desc')]
+          ].map(([n,tStep,dStep])=>(
             <div key={n} style={{display:'flex',gap:12,padding:'14px 0',borderBottom:'1px solid var(--line)'}}>
               <span style={{color:'#FF9933',fontWeight:900}}>{n}</span>
               <div>
-                <strong style={{fontSize:13}}>{t}</strong>
-                <p className="muted" style={{margin:'5px 0 0',fontSize:11,lineHeight:1.5}}>{d}</p>
+                <strong style={{fontSize:13}}>{tStep}</strong>
+                <p className="muted" style={{margin:'5px 0 0',fontSize:11,lineHeight:1.5}}>{dStep}</p>
               </div>
             </div>
           ))}
@@ -329,12 +334,13 @@ function AI({kind}:{kind:'copilot'|'recommendations'|'search'}){
 }
 
 function GIS(){
+  const {t}=useLanguage();
   return (
     <>
       <Header
-        kicker="GIS visualization · MapLibre + deck.gl"
-        title="See the system in space."
-        desc="Explore land use, climate exposure, urban growth and dispute signals from the national view down to district-level decisions."
+        kicker={t('gis.kicker')}
+        title={t('gis.title')}
+        desc={t('gis.desc')}
       />
       <MapView/>
     </>
@@ -342,26 +348,27 @@ function GIS(){
 }
 
 function Analytics(){
+  const {t}=useLanguage();
   return (
     <>
       <Header
-        kicker="Analytics & early warning"
+        kicker={t('dash.kicker')}
         title="Signals before they become crises."
         desc="Trend, anomaly and evidence views connect the shape of land change to the policy choices around it."
         action={
           <button onClick={()=>window.print()} style={{background:'var(--btn-bg)',border:0,color:'var(--btn-text)',borderRadius:10,padding:'11px 14px',fontWeight:900}}>
-            <Download size={14} style={{verticalAlign:'middle'}}/> Export insight report
+            <Download size={14} style={{verticalAlign:'middle'}}/> {t('dash.export')}
           </button>
         }
       />
       <div style={{display:'grid',gridTemplateColumns:'1.2fr 1fr',gap:14}}>
         <section className="glass" style={{padding:18,borderRadius:18}}>
-          <div className="eyebrow">Dispute trend</div>
+          <div className="eyebrow">{t('dash.disputeSignals')}</div>
           <h3 style={{margin:'5px 0 12px'}}>Cases are falling — unevenly</h3>
           <DisputeChart/>
         </section>
         <section className="glass" style={{padding:18,borderRadius:18}}>
-          <div className="eyebrow">Land use</div>
+          <div className="eyebrow">{t('dash.landUse')}</div>
           <h3 style={{margin:'5px 0 12px'}}>Conversion pressure by year</h3>
           <TrendChart/>
         </section>
@@ -387,6 +394,7 @@ function Analytics(){
 }
 
 function Simulation(){
+  const {t}=useLanguage();
   const [digit,setDigit]=useState(68);
   const [boundary,setBoundary]=useState(42);
   const [saved,setSaved]=useState(false);
@@ -408,34 +416,34 @@ function Simulation(){
   return (
     <>
       <Header
-        kicker="Policy simulation · confidence ranges"
-        title="Model the trade-off before you act."
-        desc="Adjust policy levers and see the projected effect on disputes, conversion, revenue and climate resilience."
+        kicker={t('sim.kicker')}
+        title={t('sim.title')}
+        desc={t('sim.desc')}
         action={
           <button onClick={save} style={{background:saved?'rgba(19,136,8,.18)':varBtnBg(),border:0,color:saved?'#138808':varBtnText(),borderRadius:10,padding:'11px 14px',fontWeight:900}}>
-            {saved?<><Check size={14} style={{verticalAlign:'middle'}}/> Scenario saved</>:<><Save size={14} style={{verticalAlign:'middle'}}/> Save scenario</>}
+            {saved?<><Check size={14} style={{verticalAlign:'middle'}}/> {t('sim.saved')}</>:<><Save size={14} style={{verticalAlign:'middle'}}/> {t('sim.save')}</>}
           </button>
         }
       />
       <div style={{display:'grid',gridTemplateColumns:'300px 1fr',gap:14}}>
         <section className="glass" style={{padding:20,borderRadius:18}}>
-          <div className="eyebrow">Scenario controls</div>
-          <h3>Digital land transition</h3>
-          <label className="muted" style={{fontSize:11}}>Record digitisation rate <strong style={{color:'var(--text)',float:'right'}}>{digit}%</strong></label>
+          <div className="eyebrow">{t('sim.controls')}</div>
+          <h3>{t('sim.digitalTransition')}</h3>
+          <label className="muted" style={{fontSize:11}}>{t('sim.digitisationRate')} <strong style={{color:'var(--text)',float:'right'}}>{digit}%</strong></label>
           <input type="range" min="20" max="100" value={digit} onChange={e=>setDigit(+e.target.value)} style={{width:'100%',accentColor:'#FF9933',margin:'12px 0 22px'}}/>
-          <label className="muted" style={{fontSize:11}}>Urban boundary strictness <strong style={{color:'var(--text)',float:'right'}}>{boundary}%</strong></label>
+          <label className="muted" style={{fontSize:11}}>{t('sim.boundaryStrictness')} <strong style={{color:'var(--text)',float:'right'}}>{boundary}%</strong></label>
           <input type="range" min="10" max="90" value={boundary} onChange={e=>setBoundary(+e.target.value)} style={{width:'100%',accentColor:'#1F3A93',margin:'12px 0 22px'}}/>
           <div style={{padding:12,borderRadius:12,background:'rgba(255,153,51,.08)',fontSize:11,lineHeight:1.6}}>
-            <Info size={13} color="#FF9933" style={{verticalAlign:'middle'}}/> Confidence range: <strong>±{outcomes.confidence}%</strong><br/>Based on 18 comparable district interventions.
+            <Info size={13} color="#FF9933" style={{verticalAlign:'middle'}}/> {t('sim.confidenceRange')} <strong>±{outcomes.confidence}%</strong><br/>{t('sim.basedOn')}
           </div>
         </section>
         <section className="glass" style={{padding:20,borderRadius:18}}>
-          <div className="eyebrow">Projected outcomes · 2024–2030</div>
+          <div className="eyebrow">{t('sim.projectedOutcomes')}</div>
           <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,margin:'16px 0'}}>
-            <Stat label="Dispute pressure" value={`${outcomes.disputePressure}`} delta="lower is better" down/>
-            <Stat label="Revenue index" value={`${outcomes.revenueIndex}`} delta="API projected"/>
-            <Stat label="Conversion risk" value={`${outcomes.conversionRisk}`} delta="API projected"/>
-            <Stat label="Resilience" value={`${outcomes.resilience}`} delta="API projected"/>
+            <Stat label={t('sim.disputePressure')} value={`${outcomes.disputePressure}`} delta={t('sim.lowerBetter')} down/>
+            <Stat label={t('sim.revenueIndex')} value={`${outcomes.revenueIndex}`} delta={t('sim.apiProjected')}/>
+            <Stat label={t('sim.conversionRisk')} value={`${outcomes.conversionRisk}`} delta={t('sim.apiProjected')}/>
+            <Stat label={t('sim.resilience')} value={`${outcomes.resilience}`} delta={t('sim.apiProjected')}/>
           </div>
           <div className="grid-bg" style={{height:260,borderRadius:16,display:'flex',alignItems:'flex-end',gap:10,padding:22}}>
             {[54,61,58,68,72,78,84].map((h,i)=>(
@@ -455,6 +463,7 @@ function varBtnBg(){ return 'var(--btn-bg)'; }
 function varBtnText(){ return 'var(--btn-text)'; }
 
 function Projects(){
+  const {t}=useLanguage();
   const [list,setList]=useState(projects);
   const [active,setActive]=useState(projects[0]);
   const [comment,setComment]=useState('');
@@ -477,12 +486,12 @@ function Projects(){
   return (
     <>
       <Header
-        kicker="Collaboration workspaces"
-        title="Build the evidence together."
-        desc="Shared research projects for officials, researchers and students — with work, review and feedback in one place."
+        kicker={t('proj.kicker')}
+        title={t('proj.title')}
+        desc={t('proj.desc')}
         action={
           <button onClick={addWorkspace} style={{background:'var(--btn-bg)',border:0,color:'var(--btn-text)',borderRadius:10,padding:'11px 14px',fontWeight:900}}>
-            <Plus size={14} style={{verticalAlign:'middle'}}/> New workspace
+            <Plus size={14} style={{verticalAlign:'middle'}}/> {t('proj.new')}
           </button>
         }
       />
@@ -494,16 +503,16 @@ function Projects(){
                 <span style={{width:10,height:10,borderRadius:'50%',background:p.color}}/>
                 <span style={{fontSize:12,fontWeight:800}}>{p.name}</span>
               </div>
-              <div className="muted" style={{fontSize:10,margin:'8px 0 0 20px'}}>{p.members} members · {p.progress}% complete</div>
+              <div className="muted" style={{fontSize:10,margin:'8px 0 0 20px'}}>{p.members} {t('proj.members')} · {p.progress}% {t('proj.complete')}</div>
             </button>
           ))}
         </section>
         <section className="glass" style={{padding:20,borderRadius:18}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'start',gap:10}}>
             <div>
-              <div className="eyebrow">Active workspace · {active.status}</div>
+              <div className="eyebrow">{t('proj.activeWorkspace')} · {active.status}</div>
               <h2 style={{margin:'7px 0'}}>{active.name}</h2>
-              <p className="muted" style={{fontSize:12}}>Led by {active.lead} · evidence sprint for district-level policy adoption</p>
+              <p className="muted" style={{fontSize:12}}>{t('proj.ledBy')} {active.lead} · {t('proj.evidenceSprint')}</p>
             </div>
             <div style={{display:'flex'}}>
               {['AM','FK','PS','+15'].map((x,i)=>(
@@ -518,19 +527,19 @@ function Projects(){
           </div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
             <div>
-              <div className="eyebrow">Task board</div>
+              <div className="eyebrow">{t('proj.taskBoard')}</div>
               {['Validate district evidence','Review model assumptions','Draft policy note'].map((x,i)=>(
                 <button key={x} onClick={()=>setTasks(v=>v.map((done,j)=>j===i?!done:done))} style={{display:'flex',width:'100%',alignItems:'center',gap:9,padding:'12px 0',border:0,borderBottom:'1px solid var(--line)',fontSize:12,background:'transparent',color:'var(--text)',textAlign:'left'}}>
                   <span style={{width:17,height:17,borderRadius:5,border:'1px solid '+(tasks[i]?'#138808':'#6d8290'),display:'grid',placeItems:'center'}}>
                     {tasks[i]&&<Check size={12} color="#138808"/>}
                   </span>
                   {x}
-                  <span className="muted" style={{marginLeft:'auto',fontSize:10}}>{tasks[i]?'Done':'Open'}</span>
+                  <span className="muted" style={{marginLeft:'auto',fontSize:10}}>{tasks[i]?t('proj.done'):t('proj.open')}</span>
                 </button>
               ))}
             </div>
             <div>
-              <div className="eyebrow">Threaded notes</div>
+              <div className="eyebrow">{t('proj.threadedNotes')}</div>
               <div style={{padding:'12px 0',fontSize:12,lineHeight:1.5}}>
                 <strong>Farah Ahmed</strong>
                 <p className="muted" style={{margin:'5px 0'}}>The floodplain evidence is strong, but let’s add the 2021 rainfall anomaly before review.</p>
@@ -544,7 +553,7 @@ function Projects(){
                   value={comment}
                   onChange={e=>setComment(e.target.value)}
                   onKeyDown={e=>e.key==='Enter'&&addNote()}
-                  placeholder="Add a note…"
+                  placeholder={t('proj.addNote')}
                   style={{flex:1,background:'var(--panel2)',border:'1px solid var(--line)',borderRadius:8,padding:9,color:'var(--text)',fontSize:11}}
                 />
                 <button onClick={addNote} aria-label="Send note" style={{background:'var(--btn-bg)',border:0,borderRadius:8,padding:'0 10px',color:'var(--btn-text)'}}>
@@ -560,23 +569,31 @@ function Projects(){
 }
 
 function Login(){
+  const {t}=useLanguage();
   return (
     <div style={{minHeight:'100vh',display:'grid',placeItems:'center',padding:20}}>
       <div className="glass" style={{width:'min(500px,100%)',borderRadius:24,padding:28}}>
-        <Link href="/" style={{display:'flex',alignItems:'center',gap:10,fontWeight:900,fontSize:20}}>
+        <Link href="/" style={{display:'flex',alignItems:'center',gap:10,fontWeight:900,fontSize:20}} title={t('nav.home')}>
           <span style={{width:36,height:36,borderRadius:11,display:'grid',placeItems:'center',background:'linear-gradient(135deg,#FF9933,#1F3A93)',color:'#FFFFFF'}}>B</span>
           Bhu<span style={{color:'var(--accent)'}}>Niti</span>
         </Link>
-        <div className="eyebrow" style={{marginTop:36}}>Demo workspace access</div>
-        <h1 style={{fontSize:34,letterSpacing:'-.05em',margin:'9px 0'}}>Choose a role. See the system.</h1>
-        <p className="muted" style={{fontSize:13,lineHeight:1.6}}>Use any role below to explore how permissions, navigation and insight views adapt to the people who govern, research and live on land.</p>
+        <div className="eyebrow" style={{marginTop:36}}>{t('login.kicker')}</div>
+        <h1 style={{fontSize:34,letterSpacing:'-.05em',margin:'9px 0'}}>{t('login.title')}</h1>
+        <p className="muted" style={{fontSize:13,lineHeight:1.6}}>{t('login.desc')}</p>
         <div style={{display:'grid',gap:8,marginTop:22}}>
-          {['Government Official','Researcher','Student','Institution Admin','Public User','Super Admin'].map((r,i)=>(
+          {[
+            ['Government Official','role.official'],
+            ['Researcher','role.researcher'],
+            ['Student','role.student'],
+            ['Institution Admin','role.admin'],
+            ['Public User','role.public'],
+            ['Super Admin','role.super']
+          ].map(([r,k],i)=>(
             <Link href={`/dashboard?role=${encodeURIComponent(r)}`} key={r} className="focus-ring" style={{display:'flex',alignItems:'center',gap:10,padding:12,borderRadius:11,border:'1px solid var(--line)',background:'rgba(255,255,255,.03)',fontSize:13}}>
               <span style={{width:27,height:27,borderRadius:8,display:'grid',placeItems:'center',background:i%2?'rgba(31,58,147,.16)':'rgba(255,153,51,.15)',color:i%2?'#1F3A93':'#FF9933',fontWeight:900}}>
-                {r.slice(0,1)}
+                {t(k).slice(0,1)}
               </span>
-              {r}
+              {t(k)}
               <ChevronRight size={15} style={{marginLeft:'auto'}}/>
             </Link>
           ))}
@@ -587,6 +604,7 @@ function Login(){
 }
 
 function Generic({mode}:{mode:string}){
+  const {t}=useLanguage();
   const content:any={
     solution:{title:'A national operating layer for land decisions.',desc:'Connect land records, research, GIS and policy action in one evidence trail.',cards:['Discover evidence','Inspect geography','Move from policy to pilot']},
     innovation:{title:'From idea to pilot to scale.',desc:'A transparent innovation portal for challenge briefs, grants and field pilots.',cards:['Open challenge briefs','Match evidence to pilots','Track outcomes']},
@@ -603,7 +621,7 @@ function Generic({mode}:{mode:string}){
             <h3>{x}</h3>
             <p className="muted" style={{fontSize:12,lineHeight:1.6}}>Seeded public evidence, clear provenance and a practical next action keep the product connected to a real decision.</p>
             <Link href={i===0?'/repository':i===1?'/gis':'/projects'} style={{display:'inline-block',background:'rgba(255,153,51,.12)',border:'1px solid rgba(255,153,51,.3)',color:'#FF9933',borderRadius:8,padding:'8px 10px',fontSize:11,fontWeight:700}}>
-              Explore module <ChevronRight size={12} style={{verticalAlign:'middle'}}/>
+              {t('generic.exploreModule')} <ChevronRight size={12} style={{verticalAlign:'middle'}}/>
             </Link>
           </div>
         ))}
