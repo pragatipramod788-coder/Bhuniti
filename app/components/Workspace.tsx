@@ -1,0 +1,619 @@
+'use client';
+import dynamic from 'next/dynamic';
+import {useEffect,useMemo,useState} from 'react';
+import Link from 'next/link';
+import {AlertTriangle,ArrowDownRight,ArrowUpRight,BarChart3,Check,ChevronRight,Database,Download,FileText,Filter,Info,Mic,Plus,RefreshCw,Save,Search,Send,ShieldCheck,Sparkles,Upload,Users,Workflow,X} from 'lucide-react';
+import AppShell from './AppShell';
+import {repoItems,projects,risks,activity} from '../data/seed';
+import {DisputeChart,LandUseChart,TrendChart} from './Charts';
+import UploadAsset from './UploadAsset';
+
+const MapView=dynamic(()=>import('./MapView'),{ssr:false,loading:()=> (
+  <div className="glass" style={{height:560,borderRadius:24,display:'grid',placeItems:'center'}}>
+    <span className="eyebrow">Loading MapLibre intelligence layers…</span>
+  </div>
+)});
+
+function Header({kicker,title,desc,action}:{kicker:string;title:string;desc:string;action?:React.ReactNode}){
+  return (
+    <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',gap:20,flexWrap:'wrap',marginBottom:22}}>
+      <div>
+        <div className="eyebrow">{kicker}</div>
+        <h1 style={{fontSize:'clamp(30px,4vw,48px)',letterSpacing:'-.055em',margin:'9px 0 8px'}}>{title}</h1>
+        <p className="muted" style={{margin:0,maxWidth:680,lineHeight:1.6,fontSize:13}}>{desc}</p>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function Stat({label,value,delta,down=false}:{label:string;value:string;delta:string;down?:boolean}){
+  return (
+    <div className="glass" style={{padding:17,borderRadius:16}}>
+      <div className="muted" style={{fontSize:11}}>{label}</div>
+      <div className="metric" style={{fontSize:28,fontWeight:900,margin:'8px 0'}}>{value}</div>
+      <div style={{fontSize:11,color:down?'#FF5A5A':'#138808',fontWeight:700,display:'flex',alignItems:'center',gap:3}}>
+        {down?<ArrowDownRight size={13}/>:<ArrowUpRight size={13}/>} {delta} <span className="muted" style={{fontWeight:400,marginLeft:4}}>vs last period</span>
+      </div>
+    </div>
+  );
+}
+
+function Dashboard(){
+  return (
+    <>
+      <Header
+        kicker="Command center · live"
+        title="Good morning, Aarav."
+        desc="A national view of land governance signals, evidence quality and the decisions that need attention today."
+        action={
+          <button className="focus-ring" onClick={()=>window.print()} style={{background:'var(--btn-bg)',color:'var(--btn-text)',border:0,borderRadius:10,padding:'11px 14px',fontWeight:900}}>
+            <Download size={14} style={{verticalAlign:'middle'}}/> Export insight report
+          </button>
+        }
+      />
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12}}>
+        <Stat label="Land records indexed" value="12.4M" delta="18.6%"/>
+        <Stat label="Dispute risk monitored" value="2,840" delta="8.2%" down/>
+        <Stat label="Evidence score" value="87.4" delta="4.9%"/>
+        <Stat label="Active workspaces" value="148" delta="12.1%"/>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1.35fr 1fr',gap:14,marginTop:14}}>
+        <section className="glass" style={{padding:18,borderRadius:18}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+            <div>
+              <div className="eyebrow">Dispute signals</div>
+              <h3 style={{margin:'5px 0 0'}}>Monthly case trajectory</h3>
+            </div>
+            <span style={{fontSize:11,color:'#138808',fontWeight:700}}>−36% since Jan</span>
+          </div>
+          <DisputeChart/>
+        </section>
+        <section className="glass" style={{padding:18,borderRadius:18}}>
+          <div className="eyebrow">Needs attention</div>
+          <h3 style={{margin:'5px 0 14px'}}>Early-warning districts</h3>
+          {risks.map(r=>(
+            <Link href="/early-warning" key={r.district} style={{display:'flex',alignItems:'center',gap:10,padding:'11px 0',borderBottom:'1px solid var(--line)'}}>
+              <span style={{width:8,height:8,borderRadius:'50%',background:r.color==='critical'?'#FF5A5A':r.color==='high'?'#FF9933':'#138808'}}/>
+              <span style={{fontSize:12,flex:1}}>
+                {r.district}
+                <small className="muted" style={{display:'block',marginTop:3}}>{r.reason}</small>
+              </span>
+              <strong style={{fontSize:13}}>{r.score}</strong>
+              <ChevronRight size={14} color="#708999"/>
+            </Link>
+          ))}
+        </section>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginTop:14}}>
+        <section className="glass" style={{padding:18,borderRadius:18}}>
+          <div className="eyebrow">Land use transition</div>
+          <h3 style={{margin:'5px 0 12px'}}>Urban footprint is accelerating</h3>
+          <LandUseChart/>
+        </section>
+        <section className="glass" style={{padding:18,borderRadius:18}}>
+          <div className="eyebrow">Activity feed</div>
+          <h3 style={{margin:'5px 0 10px'}}>Across your network</h3>
+          {activity.map(a=>(
+            <div key={a.label} style={{display:'flex',gap:10,padding:'11px 0',borderBottom:'1px solid var(--line)'}}>
+              <div style={{width:26,height:26,borderRadius:8,background:'rgba(255,153,51,.12)',display:'grid',placeItems:'center'}}>
+                <Sparkles size={13} color="#FF9933"/>
+              </div>
+              <div style={{fontSize:12}}>
+                {a.label}
+                <div className="muted" style={{fontSize:10,marginTop:4}}>{a.meta}</div>
+              </div>
+            </div>
+          ))}
+        </section>
+      </div>
+    </>
+  );
+}
+
+function Repository(){
+  const [q,setQ]=useState('');
+  const [preview,setPreview]=useState<string|null>(null);
+  const [voice,setVoice]=useState(false);
+  const [voiceError,setVoiceError]=useState('');
+  const [filtered,setFiltered]=useState(repoItems);
+
+  useEffect(()=>{
+    let live=true;
+    fetch(`/api/search?q=${encodeURIComponent(q)}`)
+      .then(r=>r.json())
+      .then(data=>{if(live)setFiltered(data.results||[])})
+      .catch(()=>{if(live)setFiltered(repoItems)});
+    return()=>{live=false};
+  },[q]);
+
+  const startVoice=()=>{
+    const S=(window as any).webkitSpeechRecognition||(window as any).SpeechRecognition;
+    if(!S){
+      setVoiceError('Voice search is not supported in this browser.');
+      return;
+    }
+    setVoiceError('');
+    const r=new S();
+    r.onstart=()=>setVoice(true);
+    r.onresult=(e:any)=>{setQ(e.results[0][0].transcript);setVoice(false)};
+    r.onerror=()=>{setVoice(false);setVoiceError('Microphone permission was denied or unavailable.');};
+    r.onend=()=>setVoice(false);
+    r.start();
+  };
+
+  return (
+    <>
+      <Header
+        kicker="Central repository · provenance first"
+        title="Research, data, policy — together."
+        desc="A trusted evidence layer for land governance, with source, date, version and uploader visible at every step."
+        action={<UploadAsset/>}
+      />
+      <div className="glass" style={{padding:12,borderRadius:16,display:'flex',gap:8,alignItems:'center',marginBottom:14}}>
+        <Search size={16} color="var(--accent)"/>
+        <input
+          value={q}
+          onChange={e=>setQ(e.target.value)}
+          placeholder="Search titles, abstracts and tags with relevance scoring…"
+          style={{flex:1,background:'transparent',border:0,outline:0,color:'var(--text)',fontSize:13}}
+        />
+        <button onClick={startVoice} aria-label="Start voice search" className="focus-ring" style={{background:voice?'rgba(255,153,51,.2)':'rgba(255,255,255,.05)',border:'1px solid var(--line)',color:voice?'#FF9933':'var(--muted)',borderRadius:8,padding:8}}>
+          <Mic size={15}/>
+        </button>
+        <button className="focus-ring" aria-label="Filter results" style={{background:'rgba(255,255,255,.05)',border:'1px solid var(--line)',color:'var(--muted)',borderRadius:8,padding:8}}>
+          <Filter size={15}/>
+        </button>
+      </div>
+      {voiceError&&<div role="status" style={{color:'#FF9933',fontSize:11,marginBottom:10}}>{voiceError}</div>}
+      <div style={{display:'flex',gap:8,marginBottom:14,flexWrap:'wrap'}}>
+        {['All formats','Papers','Datasets','Policies','Legal','Maharashtra','Climate','2024'].map(x=>(
+          <button key={x} onClick={()=>setQ(x==='All formats'?'':x)} style={{fontSize:11,padding:'7px 10px',borderRadius:999,border:'1px solid var(--line)',color:'var(--muted)',background:'transparent'}}>
+            {x}
+          </button>
+        ))}
+      </div>
+      <div className="glass" style={{borderRadius:18,overflow:'hidden'}}>
+        {filtered.map(item=>(
+          <div key={item.id} style={{padding:18,borderBottom:'1px solid var(--line)',display:'flex',gap:16,alignItems:'flex-start',flexWrap:'wrap'}}>
+            <div style={{width:40,height:40,borderRadius:11,background:item.type==='Dataset'?'rgba(31,58,147,.16)':item.type==='Policy'?'rgba(255,153,51,.16)':'rgba(19,136,8,.14)',display:'grid',placeItems:'center'}}>
+              {item.type==='Dataset'?<Database size={18} color="#1F3A93"/>:<FileText size={18} color="#FF9933"/>}
+            </div>
+            <div style={{flex:1,minWidth:230}}>
+              <div style={{display:'flex',gap:8,alignItems:'center'}}>
+                <span className="eyebrow" style={{fontSize:9}}>{item.type} · {item.format}</span>
+                <span style={{fontSize:10,color:'#FF9933',fontWeight:700}}>Evidence {item.evidence}</span>
+              </div>
+              <h3 style={{fontSize:15,margin:'6px 0'}}>{item.title}</h3>
+              <p className="muted" style={{fontSize:12,lineHeight:1.5,margin:'0 0 8px'}}>{item.abstract}</p>
+              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                {item.tags.map(t=>(
+                  <span key={t} style={{fontSize:10,color:'var(--muted)',background:'rgba(255,255,255,.05)',padding:'4px 7px',borderRadius:6}}>#{t}</span>
+                ))}
+              </div>
+            </div>
+            <div style={{textAlign:'right',fontSize:11}}>
+              <div className="muted">{item.state} · {item.year}</div>
+              <div className="muted" style={{margin:'5px 0 10px'}}>v{item.version.replace('v','')} · {item.uploader}</div>
+              <button onClick={()=>setPreview(item.id)} className="focus-ring" style={{background:'rgba(255,153,51,.12)',color:'#FF9933',border:'1px solid rgba(255,153,51,.35)',borderRadius:8,padding:'7px 9px',fontSize:11,fontWeight:700}}>
+                Preview dataset
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      {preview&&(
+        <div onClick={()=>setPreview(null)} style={{position:'fixed',inset:0,zIndex:30,background:'rgba(10,42,94,.85)',display:'grid',placeItems:'center',padding:20}}>
+          <div onClick={e=>e.stopPropagation()} className="glass" style={{width:'min(720px,100%)',padding:22,borderRadius:20}}>
+            <div style={{display:'flex',justifyContent:'space-between'}}>
+              <div>
+                <div className="eyebrow">Dataset preview · evidence record {preview}</div>
+                <h2 style={{margin:'8px 0'}}>Source, schema and provenance</h2>
+              </div>
+              <button onClick={()=>setPreview(null)} style={{background:'transparent',border:0,color:'var(--muted)'}}>
+                <X size={18}/>
+              </button>
+            </div>
+            <div className="grid-bg" style={{height:220,borderRadius:14,border:'1px solid var(--line)',display:'grid',placeItems:'center',marginTop:14}}>
+              <div style={{textAlign:'center'}}>
+                <Database size={24} color="#FF9933"/>
+                <p className="muted" style={{fontSize:12}}>Structured preview opens from the upload control above; this record retains source/version evidence metadata.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function AI({kind}:{kind:'copilot'|'recommendations'|'search'}){
+  const [q,setQ]=useState('');
+  const [answer,setAnswer]=useState('');
+  const [citations,setCitations]=useState<string[]>([]);
+  const [mode,setMode]=useState('');
+  const [loading,setLoading]=useState(false);
+
+  const ask=async()=>{
+    setLoading(true);
+    try{
+      const res=await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,question:q})});
+      const data=await res.json();
+      setAnswer(data.answer||'No answer returned.');
+      setCitations(data.citations||[]);
+      setMode(data.mode||'');
+    }finally{
+      setLoading(false);
+    }
+  };
+
+  const cited=useMemo(()=>citations.length?repoItems.filter(x=>citations.includes(x.id)):repoItems.slice(0,3),[citations]);
+
+  return (
+    <>
+      <Header
+        kicker={kind==='copilot'?'RAG research copilot':kind==='recommendations'?'Evidence-ranked policy engine':'Semantic evidence search'}
+        title={kind==='copilot'?'Ask the repository.':'Make the next move with evidence.'}
+        desc="Grounded answers over the BhuNiti repository, with citations, relevance signals and a transparent fallback when no model quota is available."
+      />
+      <div style={{display:'grid',gridTemplateColumns:'1.15fr .85fr',gap:14}}>
+        <section className="glass" style={{padding:20,borderRadius:18,minHeight:480}}>
+          <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:16}}>
+            {['Compare Maharashtra and Assam','Draft a policy brief','What reduces disputes?'].map(x=>(
+              <button key={x} onClick={()=>setQ(x)} style={{background:'rgba(255,153,51,.1)',border:'1px solid rgba(255,153,51,.28)',color:'#FF9933',borderRadius:999,padding:'8px 10px',fontSize:11,fontWeight:700}}>
+                {x}
+              </button>
+            ))}
+          </div>
+          {answer?(
+            <div className="fade-up">
+              <div style={{display:'flex',gap:10,alignItems:'flex-start'}}>
+                <div style={{width:30,height:30,borderRadius:9,background:'rgba(255,153,51,.15)',display:'grid',placeItems:'center'}}>
+                  <Sparkles size={15} color="#FF9933"/>
+                </div>
+                <div style={{fontSize:14,lineHeight:1.8,whiteSpace:'pre-wrap'}}>{answer}</div>
+              </div>
+              <div className="muted" style={{fontSize:10,marginTop:12}}>Response path: {mode||'seeded'}</div>
+              <div style={{marginTop:16,paddingTop:14,borderTop:'1px solid var(--line)',display:'flex',gap:7,flexWrap:'wrap'}}>
+                {cited.map(x=>(
+                  <span key={x.id} style={{fontSize:10,color:'#FF9933',background:'rgba(255,153,51,.1)',padding:'6px 8px',borderRadius:7}}>
+                    [{x.id}] {x.title.slice(0,42)}…
+                  </span>
+                ))}
+              </div>
+            </div>
+          ):(
+            <div style={{height:300,display:'grid',placeItems:'center',textAlign:'center'}}>
+              <div>
+                <Sparkles size={28} color="#FF9933"/>
+                <h3>Start with a policy question</h3>
+                <p className="muted" style={{fontSize:12}}>The model receives repository context before it answers.</p>
+              </div>
+            </div>
+          )}
+          <div style={{display:'flex',gap:8,marginTop:14}}>
+            <input
+              value={q}
+              onChange={e=>setQ(e.target.value)}
+              onKeyDown={e=>e.key==='Enter'&&ask()}
+              placeholder="Ask about land governance…"
+              className="focus-ring"
+              style={{flex:1,background:'var(--panel2)',border:'1px solid var(--line)',borderRadius:10,padding:'12px 13px',color:'var(--text)'}}
+            />
+            <button onClick={ask} disabled={loading||!q} style={{background:'var(--btn-bg)',border:0,color:'var(--btn-text)',borderRadius:10,padding:'0 14px',fontWeight:900}}>
+              {loading?<RefreshCw size={16}/>:<Send size={16}/>}
+            </button>
+          </div>
+        </section>
+        <section className="glass" style={{padding:20,borderRadius:18}}>
+          <div className="eyebrow">How it works</div>
+          <h3>Transparent by default</h3>
+          {[
+            ['01','Retrieve','Find the strongest title, abstract and tag matches.'],
+            ['02','Reason','Use a real LLM call when the managed runtime is available.'],
+            ['03','Cite','Show the returned source IDs that shaped the response.'],
+            ['04','Fallback','Keep a deterministic evidence-grounded answer if quota is unavailable.']
+          ].map(([n,t,d])=>(
+            <div key={n} style={{display:'flex',gap:12,padding:'14px 0',borderBottom:'1px solid var(--line)'}}>
+              <span style={{color:'#FF9933',fontWeight:900}}>{n}</span>
+              <div>
+                <strong style={{fontSize:13}}>{t}</strong>
+                <p className="muted" style={{margin:'5px 0 0',fontSize:11,lineHeight:1.5}}>{d}</p>
+              </div>
+            </div>
+          ))}
+        </section>
+      </div>
+    </>
+  );
+}
+
+function GIS(){
+  return (
+    <>
+      <Header
+        kicker="GIS visualization · MapLibre + deck.gl"
+        title="See the system in space."
+        desc="Explore land use, climate exposure, urban growth and dispute signals from the national view down to district-level decisions."
+      />
+      <MapView/>
+    </>
+  );
+}
+
+function Analytics(){
+  return (
+    <>
+      <Header
+        kicker="Analytics & early warning"
+        title="Signals before they become crises."
+        desc="Trend, anomaly and evidence views connect the shape of land change to the policy choices around it."
+        action={
+          <button onClick={()=>window.print()} style={{background:'var(--btn-bg)',border:0,color:'var(--btn-text)',borderRadius:10,padding:'11px 14px',fontWeight:900}}>
+            <Download size={14} style={{verticalAlign:'middle'}}/> Export insight report
+          </button>
+        }
+      />
+      <div style={{display:'grid',gridTemplateColumns:'1.2fr 1fr',gap:14}}>
+        <section className="glass" style={{padding:18,borderRadius:18}}>
+          <div className="eyebrow">Dispute trend</div>
+          <h3 style={{margin:'5px 0 12px'}}>Cases are falling — unevenly</h3>
+          <DisputeChart/>
+        </section>
+        <section className="glass" style={{padding:18,borderRadius:18}}>
+          <div className="eyebrow">Land use</div>
+          <h3 style={{margin:'5px 0 12px'}}>Conversion pressure by year</h3>
+          <TrendChart/>
+        </section>
+      </div>
+      <section className="glass" style={{padding:18,borderRadius:18,marginTop:14}}>
+        <div className="eyebrow">Explainable risk ranking</div>
+        <h3 style={{margin:'5px 0 12px'}}>Districts to watch</h3>
+        {risks.map(r=>(
+          <div key={r.district} style={{display:'grid',gridTemplateColumns:'1.3fr 1fr 60px',gap:12,alignItems:'center',padding:'12px 0',borderBottom:'1px solid var(--line)',fontSize:12}}>
+            <span>
+              {r.district}
+              <small className="muted" style={{display:'block',marginTop:4}}>{r.reason}</small>
+            </span>
+            <div style={{height:8,background:'rgba(255,255,255,.08)',borderRadius:99}}>
+              <div style={{width:`${r.score}%`,height:'100%',background:r.score>85?'#FF5A5A':r.score>75?'#FF9933':'#138808',borderRadius:99}}/>
+            </div>
+            <strong>{r.score}</strong>
+          </div>
+        ))}
+      </section>
+    </>
+  );
+}
+
+function Simulation(){
+  const [digit,setDigit]=useState(68);
+  const [boundary,setBoundary]=useState(42);
+  const [saved,setSaved]=useState(false);
+  const [outcomes,setOutcomes]=useState({disputePressure:77,revenueIndex:92,conversionRisk:58,resilience:72,confidence:8.4});
+
+  useEffect(()=>{
+    let live=true;
+    fetch('/api/simulation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({digitisation:digit,boundary})})
+      .then(r=>r.json())
+      .then(data=>{if(live)setOutcomes(data)});
+    return()=>{live=false};
+  },[digit,boundary]);
+
+  const save=async()=>{
+    await fetch('/api/projects',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'scenario',digitisation:digit,boundary,outcomes})});
+    setSaved(true);
+  };
+
+  return (
+    <>
+      <Header
+        kicker="Policy simulation · confidence ranges"
+        title="Model the trade-off before you act."
+        desc="Adjust policy levers and see the projected effect on disputes, conversion, revenue and climate resilience."
+        action={
+          <button onClick={save} style={{background:saved?'rgba(19,136,8,.18)':varBtnBg(),border:0,color:saved?'#138808':varBtnText(),borderRadius:10,padding:'11px 14px',fontWeight:900}}>
+            {saved?<><Check size={14} style={{verticalAlign:'middle'}}/> Scenario saved</>:<><Save size={14} style={{verticalAlign:'middle'}}/> Save scenario</>}
+          </button>
+        }
+      />
+      <div style={{display:'grid',gridTemplateColumns:'300px 1fr',gap:14}}>
+        <section className="glass" style={{padding:20,borderRadius:18}}>
+          <div className="eyebrow">Scenario controls</div>
+          <h3>Digital land transition</h3>
+          <label className="muted" style={{fontSize:11}}>Record digitisation rate <strong style={{color:'var(--text)',float:'right'}}>{digit}%</strong></label>
+          <input type="range" min="20" max="100" value={digit} onChange={e=>setDigit(+e.target.value)} style={{width:'100%',accentColor:'#FF9933',margin:'12px 0 22px'}}/>
+          <label className="muted" style={{fontSize:11}}>Urban boundary strictness <strong style={{color:'var(--text)',float:'right'}}>{boundary}%</strong></label>
+          <input type="range" min="10" max="90" value={boundary} onChange={e=>setBoundary(+e.target.value)} style={{width:'100%',accentColor:'#1F3A93',margin:'12px 0 22px'}}/>
+          <div style={{padding:12,borderRadius:12,background:'rgba(255,153,51,.08)',fontSize:11,lineHeight:1.6}}>
+            <Info size={13} color="#FF9933" style={{verticalAlign:'middle'}}/> Confidence range: <strong>±{outcomes.confidence}%</strong><br/>Based on 18 comparable district interventions.
+          </div>
+        </section>
+        <section className="glass" style={{padding:20,borderRadius:18}}>
+          <div className="eyebrow">Projected outcomes · 2024–2030</div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,margin:'16px 0'}}>
+            <Stat label="Dispute pressure" value={`${outcomes.disputePressure}`} delta="lower is better" down/>
+            <Stat label="Revenue index" value={`${outcomes.revenueIndex}`} delta="API projected"/>
+            <Stat label="Conversion risk" value={`${outcomes.conversionRisk}`} delta="API projected"/>
+            <Stat label="Resilience" value={`${outcomes.resilience}`} delta="API projected"/>
+          </div>
+          <div className="grid-bg" style={{height:260,borderRadius:16,display:'flex',alignItems:'flex-end',gap:10,padding:22}}>
+            {[54,61,58,68,72,78,84].map((h,i)=>(
+              <div key={i} style={{flex:1,height:`${Math.max(25,h+(digit-68)*.25-(boundary-42)*.1)}%`,background:`linear-gradient(180deg,${i>3?'#138808':'#FF9933'},rgba(31,58,147,.3))`,borderRadius:'6px 6px 2px 2px',boxShadow:'0 0 18px rgba(255,153,51,.15)'}}/>
+            ))}
+          </div>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:10,color:'var(--muted)',marginTop:7}}>
+            {[2024,2025,2026,2027,2028,2029,2030].map(x=><span key={x}>{x}</span>)}
+          </div>
+        </section>
+      </div>
+    </>
+  );
+}
+
+function varBtnBg(){ return 'var(--btn-bg)'; }
+function varBtnText(){ return 'var(--btn-text)'; }
+
+function Projects(){
+  const [list,setList]=useState(projects);
+  const [active,setActive]=useState(projects[0]);
+  const [comment,setComment]=useState('');
+  const [notes,setNotes]=useState<string[]>([]);
+  const [tasks,setTasks]=useState([false,false,false]);
+
+  const addWorkspace=()=>{
+    const p={id:`p${list.length+1}`,name:'New evidence workspace',members:1,status:'Draft',progress:0,lead:'Aarav Mehta',color:'#FF9933'};
+    setList(v=>[...v,p]);
+    setActive(p);
+  };
+
+  const addNote=async()=>{
+    if(!comment.trim())return;
+    await fetch('/api/projects',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'note',projectId:active.id,body:comment})});
+    setNotes(v=>[...v,comment.trim()]);
+    setComment('');
+  };
+
+  return (
+    <>
+      <Header
+        kicker="Collaboration workspaces"
+        title="Build the evidence together."
+        desc="Shared research projects for officials, researchers and students — with work, review and feedback in one place."
+        action={
+          <button onClick={addWorkspace} style={{background:'var(--btn-bg)',border:0,color:'var(--btn-text)',borderRadius:10,padding:'11px 14px',fontWeight:900}}>
+            <Plus size={14} style={{verticalAlign:'middle'}}/> New workspace
+          </button>
+        }
+      />
+      <div style={{display:'grid',gridTemplateColumns:'290px 1fr',gap:14}}>
+        <section className="glass" style={{padding:12,borderRadius:18}}>
+          {list.map(p=>(
+            <button key={p.id} onClick={()=>setActive(p)} style={{width:'100%',textAlign:'left',background:active.id===p.id?'rgba(255,153,51,.14)':'transparent',border:'1px solid '+(active.id===p.id?'rgba(255,153,51,.35)':'transparent'),borderRadius:12,padding:13,color:'var(--text)',marginBottom:7}}>
+              <div style={{display:'flex',gap:10,alignItems:'center'}}>
+                <span style={{width:10,height:10,borderRadius:'50%',background:p.color}}/>
+                <span style={{fontSize:12,fontWeight:800}}>{p.name}</span>
+              </div>
+              <div className="muted" style={{fontSize:10,margin:'8px 0 0 20px'}}>{p.members} members · {p.progress}% complete</div>
+            </button>
+          ))}
+        </section>
+        <section className="glass" style={{padding:20,borderRadius:18}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'start',gap:10}}>
+            <div>
+              <div className="eyebrow">Active workspace · {active.status}</div>
+              <h2 style={{margin:'7px 0'}}>{active.name}</h2>
+              <p className="muted" style={{fontSize:12}}>Led by {active.lead} · evidence sprint for district-level policy adoption</p>
+            </div>
+            <div style={{display:'flex'}}>
+              {['AM','FK','PS','+15'].map((x,i)=>(
+                <span key={x} style={{marginLeft:-5,width:28,height:28,borderRadius:'50%',background:i===3?'var(--panel2)':'linear-gradient(135deg,#FF9933,#1F3A93)',border:'2px solid var(--panel)',display:'grid',placeItems:'center',fontSize:9,fontWeight:900,color:'#FFFFFF'}}>
+                  {x}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div style={{height:8,background:'rgba(255,255,255,.08)',borderRadius:99,margin:'18px 0'}}>
+            <div style={{width:`${active.progress}%`,height:'100%',background:active.color,borderRadius:99}}/>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+            <div>
+              <div className="eyebrow">Task board</div>
+              {['Validate district evidence','Review model assumptions','Draft policy note'].map((x,i)=>(
+                <button key={x} onClick={()=>setTasks(v=>v.map((done,j)=>j===i?!done:done))} style={{display:'flex',width:'100%',alignItems:'center',gap:9,padding:'12px 0',border:0,borderBottom:'1px solid var(--line)',fontSize:12,background:'transparent',color:'var(--text)',textAlign:'left'}}>
+                  <span style={{width:17,height:17,borderRadius:5,border:'1px solid '+(tasks[i]?'#138808':'#6d8290'),display:'grid',placeItems:'center'}}>
+                    {tasks[i]&&<Check size={12} color="#138808"/>}
+                  </span>
+                  {x}
+                  <span className="muted" style={{marginLeft:'auto',fontSize:10}}>{tasks[i]?'Done':'Open'}</span>
+                </button>
+              ))}
+            </div>
+            <div>
+              <div className="eyebrow">Threaded notes</div>
+              <div style={{padding:'12px 0',fontSize:12,lineHeight:1.5}}>
+                <strong>Farah Ahmed</strong>
+                <p className="muted" style={{margin:'5px 0'}}>The floodplain evidence is strong, but let’s add the 2021 rainfall anomaly before review.</p>
+                <span className="muted" style={{fontSize:10}}>28 min ago</span>
+                {notes.map((n,i)=>(
+                  <p key={i} style={{margin:'10px 0',padding:'8px',background:'rgba(255,153,51,.1)',borderRadius:8}}>{n}</p>
+                ))}
+              </div>
+              <div style={{display:'flex',gap:7}}>
+                <input
+                  value={comment}
+                  onChange={e=>setComment(e.target.value)}
+                  onKeyDown={e=>e.key==='Enter'&&addNote()}
+                  placeholder="Add a note…"
+                  style={{flex:1,background:'var(--panel2)',border:'1px solid var(--line)',borderRadius:8,padding:9,color:'var(--text)',fontSize:11}}
+                />
+                <button onClick={addNote} aria-label="Send note" style={{background:'var(--btn-bg)',border:0,borderRadius:8,padding:'0 10px',color:'var(--btn-text)'}}>
+                  <Send size={14}/>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </>
+  );
+}
+
+function Login(){
+  return (
+    <div style={{minHeight:'100vh',display:'grid',placeItems:'center',padding:20}}>
+      <div className="glass" style={{width:'min(500px,100%)',borderRadius:24,padding:28}}>
+        <Link href="/" style={{display:'flex',alignItems:'center',gap:10,fontWeight:900,fontSize:20}}>
+          <span style={{width:36,height:36,borderRadius:11,display:'grid',placeItems:'center',background:'linear-gradient(135deg,#FF9933,#1F3A93)',color:'#FFFFFF'}}>B</span>
+          Bhu<span style={{color:'var(--accent)'}}>Niti</span>
+        </Link>
+        <div className="eyebrow" style={{marginTop:36}}>Demo workspace access</div>
+        <h1 style={{fontSize:34,letterSpacing:'-.05em',margin:'9px 0'}}>Choose a role. See the system.</h1>
+        <p className="muted" style={{fontSize:13,lineHeight:1.6}}>Use any role below to explore how permissions, navigation and insight views adapt to the people who govern, research and live on land.</p>
+        <div style={{display:'grid',gap:8,marginTop:22}}>
+          {['Government Official','Researcher','Student','Institution Admin','Public User','Super Admin'].map((r,i)=>(
+            <Link href={`/dashboard?role=${encodeURIComponent(r)}`} key={r} className="focus-ring" style={{display:'flex',alignItems:'center',gap:10,padding:12,borderRadius:11,border:'1px solid var(--line)',background:'rgba(255,255,255,.03)',fontSize:13}}>
+              <span style={{width:27,height:27,borderRadius:8,display:'grid',placeItems:'center',background:i%2?'rgba(31,58,147,.16)':'rgba(255,153,51,.15)',color:i%2?'#1F3A93':'#FF9933',fontWeight:900}}>
+                {r.slice(0,1)}
+              </span>
+              {r}
+              <ChevronRight size={15} style={{marginLeft:'auto'}}/>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Generic({mode}:{mode:string}){
+  const content:any={
+    solution:{title:'A national operating layer for land decisions.',desc:'Connect land records, research, GIS and policy action in one evidence trail.',cards:['Discover evidence','Inspect geography','Move from policy to pilot']},
+    innovation:{title:'From idea to pilot to scale.',desc:'A transparent innovation portal for challenge briefs, grants and field pilots.',cards:['Open challenge briefs','Match evidence to pilots','Track outcomes']},
+    developers:{title:'Build on open land intelligence.',desc:'Same-origin APIs, citation-aware search and typed demo contracts for public-interest builders.',cards:['Search repository APIs','Compose cited answers','Integrate with permission boundaries']}
+  };
+  const item=content[mode]||{title:'BhuNiti workspace',desc:'Evidence for every acre.',cards:['What exists today','Evidence trail','Next action']};
+  return (
+    <>
+      <Header kicker="BhuNiti platform" title={item.title} desc={item.desc}/>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14}}>
+        {item.cards.map((x:string,i:number)=>(
+          <div className="glass" key={x} style={{padding:20,borderRadius:18,minHeight:170}}>
+            <div className="eyebrow">0{i+1}</div>
+            <h3>{x}</h3>
+            <p className="muted" style={{fontSize:12,lineHeight:1.6}}>Seeded public evidence, clear provenance and a practical next action keep the product connected to a real decision.</p>
+            <Link href={i===0?'/repository':i===1?'/gis':'/projects'} style={{display:'inline-block',background:'rgba(255,153,51,.12)',border:'1px solid rgba(255,153,51,.3)',color:'#FF9933',borderRadius:8,padding:'8px 10px',fontSize:11,fontWeight:700}}>
+              Explore module <ChevronRight size={12} style={{verticalAlign:'middle'}}/>
+            </Link>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+export default function Workspace({mode='dashboard'}:{mode?:string}){
+  const active=mode==='login'?'dashboard':mode;
+  const content=mode==='login'?<Login/>:mode==='dashboard'?<Dashboard/>:mode==='repository'?<Repository/>:mode==='gis'?<GIS/>:mode==='analytics'||mode==='early-warning'?<Analytics/>:mode==='simulation'||mode==='time-machine'?<Simulation/>:mode==='copilot'?<AI kind="copilot"/>:mode==='recommendations'||mode==='search'?<AI kind={mode==='search'?'search':'recommendations'}/>:mode==='projects'?<Projects/>:<Generic mode={mode}/>;
+  return <AppShell active={active}>{content}</AppShell>;
+}
